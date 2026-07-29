@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10-Day Wonders of Europe - Interactive Tour Calendar</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --accent: #f59e0b;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --calendar-header-bg: #1e293b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
+      color: white;
+      padding: 24px 32px;
+      border-radius: 16px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-title h1 {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+    }
+
+    .header-title p {
+      color: #93c5fd;
+      font-size: 1rem;
+    }
+
+    .date-picker-box {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px 18px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-picker-box label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #f8fafc;
+    }
+
+    .date-picker-box input {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.95rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Views Toggle & Filter */
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .view-toggle {
+      display: flex;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .toggle-btn {
+      padding: 8px 18px;
+      border: none;
+      background: transparent;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .toggle-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      background: white;
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-pill.active, .filter-pill:hover {
+      background: var(--primary-light);
+      color: white;
+      border-color: var(--primary-light);
+    }
+
+    /* CALENDAR MONTH GRID VIEW */
+    .calendar-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .month-header {
+      background: var(--calendar-header-bg);
+      color: white;
+      text-align: center;
+      padding: 16px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .weekdays-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      padding: 10px 0;
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: minmax(130px, auto);
+      background: var(--border);
+      gap: 1px;
+    }
+
+    .calendar-day-cell {
+      background: white;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: background 0.2s;
+    }
+
+    .calendar-day-cell.other-month {
+      background: #f8fafc;
+      color: #94a3b8;
+    }
+
+    .day-num {
+      font-weight: bold;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tour-event-card {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary-light);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-top: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      transition: transform 0.15s, box-shadow 0.15s;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .tour-event-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+      background: #dbeafe;
+    }
+
+    .event-day-tag {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+    }
+
+    .event-title {
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+
+    .event-meta {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    .badge-country {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.68rem;
+    }
+
+    /* AGENDA / LIST VIEW */
+    .agenda-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .agenda-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      display: grid;
+      grid-template-columns: 140px 1fr auto;
+      gap: 20px;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .agenda-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+      border-color: var(--primary-light);
+    }
+
+    .agenda-date-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .agenda-date-box .day-badge {
+      background: var(--primary);
+      color: white;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    .agenda-date-box .full-date {
+      font-weight: bold;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .agenda-content h3 {
+      font-size: 1.15rem;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .agenda-content p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .country-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* MODAL POPUP */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      max-width: 750px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-size: 1.8rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: var(--text);
+    }
+
+    .modal-header-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .modal-day-tag {
+      background: var(--primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+
+    .modal-date-tag {
+      color: var(--primary-light);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .modal-subinfo {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .meals-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding: 10px 14px;
+      background: #fef3c7;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #92400e;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 20px 0 12px 0;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .schedule-timeline {
+      list-style: none;
+      position: relative;
+      padding-left: 20px;
+      border-left: 2px solid #cbd5e1;
+      margin-left: 10px;
+      margin-bottom: 20px;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -26px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      border: 2px solid white;
+    }
+
+    .timeline-time {
+      font-weight: bold;
+      color: var(--primary);
+      font-size: 0.85rem;
+      display: inline-block;
+      width: 80px;
+    }
+
+    .timeline-desc {
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .modal-description {
+      line-height: 1.6;
+      color: var(--text);
+      font-size: 0.95rem;
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) {
+      .weekdays-grid, .days-grid {
+        grid-template-columns: repeat(1, 1fr);
+      }
+      .weekdays-grid { display: none; }
+      .agenda-card {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title">
+      <h1>Wonders of Europe — Tour Calendar</h1>
+      <p>10 Days, 6 Countries | Interactive Daily Schedule & Itinerary</p>
+    </div>
+    <div class="date-picker-box">
+      <label for="startDatePicker">Tour Start Date:</label>
+      <input type="date" id="startDatePicker" value="2026-08-01" onchange="updateStartDate()">
+    </div>
+  </header>
+
+  <div class="controls-bar">
+    <div class="view-toggle">
+      <button class="toggle-btn active" id="btnMonthView" onclick="switchView('month')">Calendar Grid View</button>
+      <button class="toggle-btn" id="btnAgendaView" onclick="switchView('agenda')">Agenda List View</button>
+    </div>
+
+    <div class="filter-pills">
+      <button class="filter-pill active" onclick="filterCountry('All')">All Countries</button>
+      <button class="filter-pill" onclick="filterCountry('UK')">🇬🇧 UK</button>
+      <button class="filter-pill" onclick="filterCountry('France')">🇫🇷 France</button>
+      <button class="filter-pill" onclick="filterCountry('Belgium')">🇧🇪 Belgium</button>
+      <button class="filter-pill" onclick="filterCountry('Germany')">🇩🇪 Germany</button>
+      <button class="filter-pill" onclick="filterCountry('Switzerland')">🇨🇭 Switzerland</button>
+      <button class="filter-pill" onclick="filterCountry('Italy')">🇮🇹 Italy</button>
+      <button class="filter-pill" onclick="filterCountry('Vatican')">🇻🇦 Vatican</button>
+      <button class="filter-pill" onclick="filterCountry('Monaco')">🇲🇨 Monaco</button>
+    </div>
+  </div>
+
+  <!-- MONTH CALENDAR VIEW -->
+  <div class="calendar-container" id="monthViewContainer">
+    <div class="month-header" id="monthHeaderTitle">August 2026</div>
+    <div class="weekdays-grid">
+      <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+
+  <!-- AGENDA LIST VIEW -->
+  <div class="agenda-container" id="agendaViewContainer" style="display: none;"></div>
+
+  <!-- DETAIL MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <span class="close-btn" onclick="closeModalDirect()">&times;</span>
+      
+      <div class="modal-header-badge">
+        <span class="modal-day-tag" id="modalDayTag">Day 1</span>
+        <span class="modal-date-tag" id="modalDateTag">Saturday, Aug 1, 2026</span>
+      </div>
+      
+      <h2 class="modal-title" id="modalTitle">London to France & Brussels</h2>
+      
+      <div class="modal-subinfo" id="modalSubinfo">
+        <span>📍 Distance: 810 Kms</span>
+        <span>🌍 Countries: UK, France, Belgium</span>
+      </div>
+
+      <div class="meals-bar" id="modalMeals">
+        🍽️ Included Meals: Lunch, Dinner
+      </div>
+
+      <div class="section-title">⏰ Estimated Schedule & Activities</div>
+      <ul class="schedule-timeline" id="modalSchedule"></ul>
+
+      <div class="section-title">📄 Full Tour Description</div>
+      <p class="modal-description" id="modalDescription"></p>
+    </div>
+  </div>
+
+  <script>
+    const itineraryData = [
+      {
+        day: 1,
+        title: "London - Calais - Brussels - Strasbourg / NE France",
+        distance: "810 Kms",
+        countries: ["UK", "France", "Belgium"],
+        meals: ["Lunch", "Dinner"],
+        preview: "Cross English Channel via Ferry/Tunnel to France. Indian lunch in Belgium, Atomium photo stop in Brussels.",
+        description: "Join up with your coach in London and depart towards Dover or Folkestone for your crossing to Calais or Dunkerque. Cross UK and French immigration. Travel into Belgium, enjoy a delightful Indian lunch, and take a photo stop at the iconic Atomium in Brussels. Journey onward to the hotel in North-eastern France for an Indian dinner and rest.",
+        schedule: [
+          { time: "06:30 AM", desc: "Coach departure from London to Dover/Folkestone." },
+          { time: "09:00 AM", desc: "Ferry or Eurotunnel crossing to Calais (approx. 40-90 mins)." },
+          { time: "12:30 PM", desc: "Arrival in mainland Europe & drive towards Belgium." },
+          { time: "01:30 PM", desc: "Delightful Indian lunch in Belgium." },
+          { time: "03:00 PM", desc: "Photo stop at the iconic Atomium in Brussels." },
+          { time: "04:30 PM", desc: "Long drive towards hotel in Strasbourg / NE France region." },
+          { time: "08:00 PM", desc: "Indian dinner and hotel check-in." }
+        ]
+      },
+      {
+        day: 2,
+        title: "Black Forest - Lake Titisee - Rhine Falls - Lucerne",
+        distance: "380 Kms",
+        countries: ["Germany", "Switzerland"],
+        meals: ["Breakfast", "Lunch", "Dinner"],
+        preview: "Scenic drive through Black Forest, Cuckoo clock shopping at Titisee, Europe's largest Rhine Falls & Lucerne.",
+        description: "Board coach heading into Germany's Black Forest. Visit Titisee-Neustadt to explore quaint streets and shop for cuckoo clocks. Enjoy Indian lunch before heading to Schaffhausen, Switzerland to admire the Rhine Falls. Continue to Lucerne to see Lake Luzern, Chapel Bridge, and the historic Lion Monument.",
+        schedule: [
+          { time: "08:00 AM", desc: "Continental breakfast and hotel check-out." },
+          { time: "10:30 AM", desc: "Scenic drive through Black Forest; arrival at Lake Titisee." },
+          { time: "12:30 PM", desc: "Indian lunch in Titisee & souvenir shopping." },
+          { time: "02:00 PM", desc: "Cross border into Schaffhausen, Switzerland." },
+          { time: "03:30 PM", desc: "Explore Rhine Falls (Europe's largest open-plain waterfall)." },
+          { time: "05:00 PM", desc: "Transfer to Lucerne; walking tour of Chapel Bridge & Lion Monument." },
+          { time: "07:30 PM", desc: "Indian dinner and check-in to Central Switzerland hotel." }
+        ]
+      },
+      {
+        day: 3,
+        title: "Mt Titlis Cable Car Summit to Venice",
+        distance: "340 Kms",
+        countries: ["Switzerland", "Italy"],
+        meals: ["Breakfast", "Lunch", "Dinner"],
+        preview: "Ascend 10,000ft up Mt Titlis via Titlis Rotair revolving cable car, Cliff Walk, then drive to Venice.",
+        description: "Ascend 10,000ft to the summit of Mt Titlis riding the world's first revolving cable car, Titlis Rotair. Experience panoramic Uri Alps views, the Cliff Walk suspension bridge, and glacier ice caves. After Indian lunch, journey south into Italy toward Venice.",
+        schedule: [
+          { time: "08:00 AM", desc: "Breakfast and morning departure." },
+          { time: "09:00 AM", desc: "Cable car ascent to Mt Titlis summit & Titlis Rotair." },
+          { time: "09:30 AM", desc: "Snow activities, highest Cliff Walk in Europe, and Glacier Caves." },
+          { time: "01:00 PM", desc: "Descent for well-deserved Indian lunch." },
+          { time: "02:30 PM", desc: "Board coach for scenic drive across Italian border toward Venice." },
+          { time: "08:00 PM", desc: "Arrival in Venice area, Indian buffet dinner, and hotel check-in." }
+        ]
+      },
+      {
+        day: 4,
+        title: "Venice Canals, Gondola Ride & Journey to Rome",
+        distance: "580 Kms",
+        countries: ["Italy"],
+        meals: ["Breakfast", "Lunch", "Dinner"],
+        preview: "Vaporetto boat to St. Mark's Square, romantic Venice Gondola ride through canals, drive to Rome.",
+        description: "Cross Bridge of Liberty to Venice ports and take a Vaporetto to San Marco. Explore St. Mark's Square, St. Mark's Basilica, Bell Tower, and Bridge of Sighs. Enjoy a classic Venetian Gondola ride. Return to mainland for lunch and drive south to Rome.",
+        schedule: [
+          { time: "08:00 AM", desc: "Breakfast and hotel check-out." },
+          { time: "09:00 AM", desc: "Vaporetto boat ride to San Marco Island." },
+          { time: "10:00 AM", desc: "Exploration of St Mark's Square, Basilica & Bell Tower." },
+          { time: "11:30 AM", desc: "Gondola ride through picturesque Venetian canals." },
+          { time: "01:00 PM", desc: "Vaporetto back to ports & Indian lunch on mainland." },
+          { time: "02:30 PM", desc: "Drive south through Central Italy toward Rome." },
+          { time: "08:30 PM", desc: "Arrival in Rome, Indian buffet dinner, and hotel check-in." }
+        ]
+      },
+      {
+        day: 5,
+        title: "Ancient Rome Highlights & Vatican City",
+        distance: "90 Kms",
+        countries: ["Italy", "Vatican"],
+        meals: ["Breakfast", "Lunch", "Dinner"],
+        preview: "Guided tour of Colosseum & Roman Forum, visit St. Peter's Basilica in Vatican City, Trevi Fountain gelato.",
+        description: "Full day in Rome with a local guide. Photo stops at Colosseum, Constantine Arch, and Roman Forums. Enjoy Indian lunch before transferring to Vatican City to explore St. Peter's Basilica. Walk to Trevi Fountain for gelato ice cream.",
+        schedule: [
+          { time: "08:30 AM", desc: "Breakfast and departure for Rome city center." },
+          { time: "09:30 AM", desc: "Guided walking tour: Colosseum photo stop & Roman Forums." },
+          { time: "01:00 PM", desc: "Indian lunch in Rome." },
+          { time: "02:30 PM", desc: "Transfer to Vatican City; entry to St. Peter's Basilica." },
+          { time: "05:00 PM", desc: "Walking tour to Trevi Fountain & authentic Italian Gelato." },
+          { time: "08:00 PM", desc: "Indian dinner and return to hotel." }
+        ]
+      },
+      {
+        day: 6,
+        title: "Florence Panoramic View, Pisa & San Remo",
+        distance: "N/A",
+        countries: ["Italy"],
+        meals: ["Breakfast", "Lunch", "Dinner"],
+        preview: "Bird's-eye view of Florence from Piazzale Michelangelo, visit Leaning Tower of Pisa, drive to Riviera.",
+        description: "Depart for Piazzale Michelangelo for a panoramic bird's-eye view of Florence and the Duomo. Continue to Pisa to visit Piazza del Duomo, the Leaning Tower, Baptistery, and Camposanto. Enjoy free time before driving to San Remo on the Riviera.",
+        schedule: [
+          { time: "08:00 AM", desc: "Breakfast and check-out." },
+          { time: "10:30 AM", desc: "Arrival at Piazzale Michelangelo for breathtaking Florence views." },
+          { time: "01:00 PM", desc: "Lunch and transfer to Pisa." },
+          { time: "02:30 PM", desc: "Explore Cathedral Square & photo stops at Leaning Tower of Pisa." },
+          { time: "04:30 PM", desc: "Coastal drive along Riviera toward San Remo." },
+          { time: "08:00 PM", desc: "Arrival, dinner, and hotel check-in in San Remo." }
+        ]
+      },
+      {
+        day: 7,
+        title: "French Riviera: Nice, Cannes & Monte Carlo",
+        distance: "220 Kms",
+        countries: ["France", "Monaco", "Italy"],
+        meals: ["Breakfast", "Dinner"],
+        preview: "Promenade des Anglais in Nice, Cannes film festival boulevard, luxury yachts & casino in Monte Carlo.",
+        description: "Cross into French Riviera (Côte d'Azur). Enjoy free time at Promenade des Anglais in Nice. Drive to Cannes to view sandy beaches and film festival venues. Visit Monte Carlo in Monaco, famous for its casino and Grand Prix circuit. Return to San Remo.",
+        schedule: [
+          { time: "08:30 AM", desc: "Continental breakfast." },
+          { time: "09:30 AM", desc: "Drive along Mediterranean coast to Nice." },
+          { time: "10:30 AM", desc: "Free time at Promenade des Anglais waterfront." },
+          { time: "12:30 PM", desc: "Indian meal in Nice." },
+          { time: "02:00 PM", desc: "Drive to Cannes; photo stops along resort coastline." },
+          { time: "04:30 PM", desc: "Visit Monaco & Monte Carlo (Casino & Grand Prix track)." },
+          { time: "07:30 PM", desc: "Return drive to San Remo for continental dinner." }
+        ]
+      },
+      {
+        day: 8,
+        title: "San Remo to Geneva Sightseeing",
+        distance: "540 Kms",
+        countries: ["Italy", "Switzerland"],
+        meals: ["Breakfast", "Dinner"],
+        preview: "Scenic journey from Italian Riviera to Geneva. Visit Flower Clock, Jet d'Eau fountain & UN Palace.",
+        description: "Leave Italian Riviera and travel north across Swiss countryside to Geneva. Evening photo stops at Jardin Anglais (Flower Clock & Jet d'Eau fountain) and United Nations Headquarters (Palais des Nations).",
+        schedule: [
+          { time: "08:00 AM", desc: "Breakfast, luggage loading, and departure from Riviera." },
+          { time: "01:00 PM", desc: "En-route lunch stop." },
+          { time: "05:30 PM", desc: "Arrival in Geneva; visit Jardin Anglais, Flower Clock & Jet d'Eau." },
+          { time: "07:00 PM", desc: "Photo stop at United Nations Headquarters (UNOG)." },
+          { time: "08:30 PM", desc: "Buffet Indian dinner and hotel check-in." }
+        ]
+      },
+      {
+        day: 9,
+        title: "Geneva to Paris & Eiffel Tower (Level 3)",
+        distance: "580 Kms",
+        countries: ["Switzerland", "France"],
+        meals: ["Breakfast", "Dinner"],
+        preview: "Drive north to Paris. Ascend Level 3 of Eiffel Tower & optional Paris Illumination Night Tour.",
+        description: "Drive north to Paris. Upon arrival, visit iconic Eiffel Tower (up to Level 3). Following an Indian dinner, participate in optional 90-minute Paris Illumination Tour featuring sparkling Eiffel Tower, Arc de Triomphe, and Champs Élysées.",
+        schedule: [
+          { time: "07:30 AM", desc: "Breakfast and hotel check-out." },
+          { time: "01:00 PM", desc: "Continental lunch stop en-route." },
+          { time: "04:00 PM", desc: "Arrival in Paris; visit Eiffel Tower (Level 3 access)." },
+          { time: "07:30 PM", desc: "Group Indian buffet dinner." },
+          { time: "09:00 PM", desc: "Optional Paris Illumination Tour (90 mins night coach ride)." },
+          { time: "11:00 PM", desc: "Hotel check-in." }
+        ]
+      },
+      {
+        day: 10,
+        title: "River Seine Cruise & Return Crossing to London",
+        distance: "460 Kms",
+        countries: ["France", "UK"],
+        meals: ["Breakfast", "Lunch"],
+        preview: "1-hour Bateaux cruise along River Seine, drive past Champs Élysées, channel crossing back to London.",
+        description: "Enjoy a 1-hour Bateaux cruise along River Seine passing Grand Palais, Eiffel Tower, and Pont Alexandre III. Drive past Champs Élysées before heading to Calais for channel crossing back to Dover/Folkestone and drop-off in London.",
+        schedule: [
+          { time: "08:00 AM", desc: "Breakfast and check-out." },
+          { time: "09:30 AM", desc: "1-Hour River Seine Bateaux Sightseeing Cruise." },
+          { time: "11:00 AM", desc: "Drive past Concorde, Champs Élysées & Paris landmarks." },
+          { time: "01:00 PM", desc: "Final group Indian lunch." },
+          { time: "02:30 PM", desc: "Drive to Calais port." },
+          { time: "06:00 PM", desc: "Ferry or Eurotunnel crossing back to UK." },
+          { time: "08:30 PM", desc: "Arrival back in London / Wembley drop-off." }
+        ]
+      }
+    ];
+
+    let currentStartDate = new Date("2026-08-01");
+    let activeCountryFilter = 'All';
+    let currentView = 'month';
+
+    function formatDate(dateObj) {
+      const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+      return dateObj.toLocaleDateString('en-US', options);
+    }
+
+    function formatFullDate(dateObj) {
+      const options = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+      return dateObj.toLocaleDateString('en-US', options);
+    }
+
+    function getTourDates() {
+      return itineraryData.map((item, index) => {
+        const d = new Date(currentStartDate);
+        d.setDate(d.getDate() + index);
+        return { ...item, dateObj: d, dateStr: formatDate(d), fullDateStr: formatFullDate(d) };
+      });
+    }
+
+    function updateStartDate() {
+      const inputVal = document.getElementById('startDatePicker').value;
+      if (inputVal) {
+        // Parse yyyy-mm-dd
+        const parts = inputVal.split('-');
+        currentStartDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        renderCurrentView();
+      }
+    }
+
+    function switchView(view) {
+      currentView = view;
+      document.getElementById('btnMonthView').classList.toggle('active', view === 'month');
+      document.getElementById('btnAgendaView').classList.toggle('active', view === 'agenda');
+      
+      document.getElementById('monthViewContainer').style.display = view === 'month' ? 'block' : 'none';
+      document.getElementById('agendaViewContainer').style.display = view === 'agenda' ? 'flex' : 'none';
+
+      renderCurrentView();
+    }
+
+    function filterCountry(country) {
+      activeCountryFilter = country;
+      document.querySelectorAll('.filter-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText.includes(country) || (country === 'All' && btn.innerText.includes('All')));
+      });
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      if (currentView === 'month') {
+        renderMonthGrid();
+      } else {
+        renderAgendaList();
+      }
+    }
+
+    function renderMonthGrid() {
+      const tourDates = getTourDates();
+      const daysGrid = document.getElementById('daysGrid');
+      daysGrid.innerHTML = '';
+
+      // Determine month and year based on start date
+      const startYear = currentStartDate.getFullYear();
+      const startMonth = currentStartDate.getMonth(); // 0-indexed
+
+      // Header title
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      document.getElementById('monthHeaderTitle').innerText = `${monthNames[startMonth]} ${startYear}`;
+
+      // Calendar month layout logic
+      const firstDayOfMonth = new Date(startYear, startMonth, 1);
+      const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sun
+      const daysInMonth = new Date(startYear, startMonth + 1, 0).getDate();
+
+      // Total slots required (padding previous month days + current month days)
+      const totalSlots = Math.ceil((startingDayOfWeek + daysInMonth) / 7) * 7;
+
+      for (let i = 0; i < totalSlots; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell';
+
+        const dayNum = i - startingDayOfWeek + 1;
+
+        if (dayNum > 0 && dayNum <= daysInMonth) {
+          const cellDate = new Date(startYear, startMonth, dayNum);
+          
+          const numHeader = document.createElement('div');
+          numHeader.className = 'day-num';
+          numHeader.innerText = dayNum;
+          cell.appendChild(numHeader);
+
+          // Find if any tour day matches this cell date
+          const matchingTourDay = tourDates.find(item => 
+            item.dateObj.getFullYear() === cellDate.getFullYear() &&
+            item.dateObj.getMonth() === cellDate.getMonth() &&
+            item.dateObj.getDate() === cellDate.getDate()
+          );
+
+          if (matchingTourDay) {
+            // Check country filter
+            if (activeCountryFilter === 'All' || matchingTourDay.countries.includes(activeCountryFilter)) {
+              const eventCard = document.createElement('div');
+              eventCard.className = 'tour-event-card';
+              eventCard.onclick = () => openModal(matchingTourDay);
+
+              const countryBadges = matchingTourDay.countries.map(c => `<span class="badge-country">${c}</span>`).join(' ');
+
+              eventCard.innerHTML = `
+                <div>
+                  <div class="event-day-tag">DAY ${matchingTourDay.day}</div>
+                  <div class="event-title">${matchingTourDay.title}</div>
+                </div>
+                <div class="event-meta">
+                  <span>${matchingTourDay.distance}</span>
+                  <div>${countryBadges}</div>
+                </div>
+              `;
+              cell.appendChild(eventCard);
+            }
+          }
+        } else {
+          cell.classList.add('other-month');
+        }
+
+        daysGrid.appendChild(cell);
+      }
+    }
+
+    function renderAgendaList() {
+      const tourDates = getTourDates();
+      const container = document.getElementById('agendaViewContainer');
+      container.innerHTML = '';
+
+      const filtered = tourDates.filter(item => activeCountryFilter === 'All' || item.countries.includes(activeCountryFilter));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-muted);">No itinerary events match the selected country filter.</div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'agenda-card';
+        card.onclick = () => openModal(item);
+
+        const countryTags = item.countries.map(c => `<span class="badge-country" style="font-size:0.75rem;">${c}</span>`).join(' ');
+
+        card.innerHTML = `
+          <div class="agenda-date-box">
+            <span class="day-badge">DAY ${item.day}</span>
+            <div class="full-date">${item.dateStr}</div>
+          </div>
+          <div class="agenda-content">
+            <h3>${item.title}</h3>
+            <p>${item.preview}</p>
+            <div class="country-tags">${countryTags}</div>
+          </div>
+          <div style="font-weight: 600; color: var(--primary-light); font-size: 0.9rem; text-align: right;">
+            ${item.distance}<br><span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">&rarr; Details</span>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function openModal(item) {
+      document.getElementById('modalDayTag').innerText = `Day ${item.day}`;
+      document.getElementById('modalDateTag').innerText = item.fullDateStr;
+      document.getElementById('modalTitle').innerText = item.title;
+      document.getElementById('modalSubinfo').innerHTML = `
+        <span>📍 Distance: <strong>${item.distance}</strong></span>
+        <span>🌍 Countries: <strong>${item.countries.join(', ')}</strong></span>
+      `;
+      
+      document.getElementById('modalMeals').innerHTML = `🍽️ Included Meals: <strong>${item.meals.join(', ')}</strong>`;
+
+      const scheduleContainer = document.getElementById('modalSchedule');
+      scheduleContainer.innerHTML = item.schedule.map(s => `
+        <li class="timeline-item">
+          <span class="timeline-time">${s.time}</span>
+          <span class="timeline-desc">${s.desc}</span>
+        </li>
+      `).join('');
+
+      document.getElementById('modalDescription').innerText = item.description;
+
+      document.getElementById('modalOverlay').style.display = 'flex';
+    }
+
+    function closeModal(event) {
+      if (event.target.id === 'modalOverlay') {
+        document.getElementById('modalOverlay').style.display = 'none';
+      }
+    }
+
+    function closeModalDirect() {
+      document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    // Initial render
+    renderCurrentView();
+  </script>
+</body>
+</html>
